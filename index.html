@@ -186,6 +186,48 @@
 	});
 
 	observer.observe(document.body, { childList: true, subtree: true });
+
+
+
+function runAutoAds() {
+    // 1. Настройка диапазона (в миллисекундах)
+    const minDelay = 10000; // 10 секунд
+    const maxDelay = 60000; // 60 секунд
+    
+    // 2. Расчет случайного времени
+    const randomTime = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+    
+    console.log(`[Ads] Реклама запланирована через: ${Math.round(randomTime / 1000)} сек.`);
+
+    // 3. Установка таймера
+    setTimeout(() => {
+        // Выбираем формат: interstitial (баннер на весь экран) или reward (видео)
+        const adFormat = Math.random() > 0.5 ? 'interstitial' : 'reward';
+        
+        console.log(`[Ads] Пытаюсь показать: ${adFormat}`);
+
+        vkBridge.send('VKWebAppCheckNativeAds', { ad_format: adFormat })
+            .then((data) => {
+                if (data.result) {
+                    return vkBridge.send('VKWebAppShowNativeAds', { ad_format: adFormat });
+                } else {
+                    throw new Error("Реклама не готова");
+                }
+            })
+            .then((result) => {
+                console.log(`[Ads] Успешный показ: ${adFormat}`);
+                runAutoAds(); // Запускаем цикл заново после успешного показа
+            })
+            .catch((error) => {
+                console.log(`[Ads] Пропуск или ошибка: ${error.message}`);
+                runAutoAds(); // Запускаем цикл заново, даже если реклама не показалась
+            });
+
+    }, randomTime);
+}
+
+// Запускаем первый цикл сразу при загрузке скрипта
+runAutoAds();
 </script>
 </body>
 </html>
