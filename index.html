@@ -177,57 +177,60 @@
 			</script>
 
 <script>
-	const observer = new MutationObserver(() => {
-		const watermark = document.getElementById('watermark');
-		if (watermark) {
-			watermark.remove();
-			console.log('Watermark removed');
-		}
-	});
+    const observer = new MutationObserver(() => {
+        const watermark = document.getElementById('watermark');
+        if (watermark) {
+            watermark.remove();
+            console.log('Watermark removed');
+        }
+    });
 
-	observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true });
 
+    let reloadTimer; // Переменная для контроля перезагрузки
 
+    function runAutoAds() {
+        // Если мы вернулись в эту функцию, значит реклама закрыта или пропущена — отменяем перезагрузку
+        clearTimeout(reloadTimer);
 
-function runAutoAds() {
-    // 1. Настройка диапазона (в миллисекундах)
-    const minDelay = 10000; // 10 секунд
-    const maxDelay = 60000; // 60 секунд
-    
-    // 2. Расчет случайного времени
-    const randomTime = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-    
-    console.log(`[Ads] Реклама запланирована через: ${Math.round(randomTime / 1000)} сек.`);
-
-    // 3. Установка таймера
-    setTimeout(() => {
-        // Выбираем формат: interstitial (баннер на весь экран) или reward (видео)
-        const adFormat = Math.random() > 0.5 ? 'interstitial' : 'reward';
+        const minDelay = 10000; // 10 сек
+        const maxDelay = 60000; // 60 сек
+        const randomTime = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
         
-        console.log(`[Ads] Пытаюсь показать: ${adFormat}`);
+        console.log(`[Ads] Реклама запланирована через: ${Math.round(randomTime / 1000)} сек.`);
 
-        vkBridge.send('VKWebAppCheckNativeAds', { ad_format: adFormat })
-            .then((data) => {
-                if (data.result) {
-                    return vkBridge.send('VKWebAppShowNativeAds', { ad_format: adFormat });
-                } else {
-                    throw new Error("Реклама не готова");
-                }
-            })
-            .then((result) => {
-                console.log(`[Ads] Успешный показ: ${adFormat}`);
-                runAutoAds(); // Запускаем цикл заново после успешного показа
-            })
-            .catch((error) => {
-                console.log(`[Ads] Пропуск или ошибка: ${error.message}`);
-                runAutoAds(); // Запускаем цикл заново, даже если реклама не показалась
-            });
+        setTimeout(() => {
+            const adFormat = Math.random() > 0.5 ? 'interstitial' : 'reward';
+            console.log(`[Ads] Попытка показа: ${adFormat}`);
 
-    }, randomTime);
-}
+            // ВКЛЮЧАЕМ ТАЙМЕР ПЕРЕЗАГРУЗКИ (если через 30 сек реклама все еще висит — релоад)
+            reloadTimer = setTimeout(() => {
+                console.log("[Ads] Пользователь завис в рекламе. Перезагрузка...");
+                location.reload();
+            }, 30000); // 30 секунд лимит на просмотр
 
-// Запускаем первый цикл сразу при загрузке скрипта
-runAutoAds();
+            vkBridge.send('VKWebAppCheckNativeAds', { ad_format: adFormat })
+                .then((data) => {
+                    if (data.result) {
+                        return vkBridge.send('VKWebAppShowNativeAds', { ad_format: adFormat });
+                    } else {
+                        throw new Error("Ad not ready");
+                    }
+                })
+                .then((result) => {
+                    console.log(`[Ads] Показ завершен успешно`);
+                    runAutoAds(); 
+                })
+                .catch((error) => {
+                    console.log(`[Ads] Ошибка или пропуск: ${error.message}`);
+                    runAutoAds(); 
+                });
+
+        }, randomTime);
+    }
+
+    // Старт цикла
+    runAutoAds();
 </script>
 </body>
 </html>
