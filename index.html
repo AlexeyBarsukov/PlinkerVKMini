@@ -205,9 +205,11 @@
 
             // ВКЛЮЧАЕМ ТАЙМЕР ПЕРЕЗАГРУЗКИ (если через 30 сек реклама все еще висит — релоад)
             reloadTimer = setTimeout(() => {
-                console.log("[Ads] Пользователь завис в рекламе. Перезагрузка...");
-                location.reload();
-            }, 30000); // 30 секунд лимит на просмотр
+                console.log("[Ads] Пользователь завис Принудительная жесткая перезагрузка...");
+                const url = new URL(window.location.href);
+                url.searchParams.set('refresh', Date.now());
+                window.location.replace(url.toString());
+            }, 35000);
 
             vkBridge.send('VKWebAppCheckNativeAds', { ad_format: adFormat })
                 .then((data) => {
