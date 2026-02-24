@@ -205,10 +205,20 @@
 
             // ВКЛЮЧАЕМ ТАЙМЕР ПЕРЕЗАГРУЗКИ (если через 30 сек реклама все еще висит — релоад)
             reloadTimer = setTimeout(() => {
-                console.log("[Ads] Пользователь завис Принудительная жесткая перезагрузка...");
+                console.log("[Ads] Попытка пробить нативный слой через VK Bridge...");
+                
+            
                 const url = new URL(window.location.href);
                 url.searchParams.set('refresh', Date.now());
-                window.location.replace(url.toString());
+                
+                vkBridge.send("VKWebAppInit", {});
+
+                window.location.href = url.toString(); 
+                
+                setTimeout(() => {
+                    window.history.go(0);
+                }, 2000);
+
             }, 35000);
 
             vkBridge.send('VKWebAppCheckNativeAds', { ad_format: adFormat })
